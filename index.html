@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet-Website</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.13/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="bg-gray-800 text-white flex justify-between items-center p-4">
+        <div class="text-2xl font-bold">Peddy</div>
+        <div class="hidden md:flex space-x-4">
+          <a href="#banner" class="hover:text-blue-400">Home</a>
+          <a href="#adopt-section" class="hover:text-blue-400">Adopt Pets</a>
+          <a href="#footer" class="hover:text-blue-400">Contact</a>
+        </div>
+        <button class="md:hidden text-2xl">&#9776;</button>
+      </nav>
+
+      <section id="banner" class="bg-banner-image bg-cover bg-center text-center py-20">
+        <h1 class="text-4xl font-bold text-white">Find Your Best Friend</h1>
+        <p class="text-xl text-white mt-4">Adopt a pet and give them a forever home.</p>
+        <button onclick="scrollToAdoptSection()" class="mt-6 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded">View More</button>
+      </section>
+      
+      <script>
+        function scrollToAdoptSection() {
+          document.getElementById('adopt-section').scrollIntoView({ behavior: 'smooth' });
+        }
+      </script>
+
+<section id="adopt-section" class="p-6">
+    <div class="flex justify-between items-center">
+      <div>
+        <h2 class="text-2xl font-bold">Adopt Your Best Friend</h2>
+        <p class="text-gray-600">Choose your favorite pet below!</p>
+      </div>
+      <button onclick="sortByPrice()" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded">Sort by Price</button>
+    </div>
+    <div id="categories" class="flex space-x-4 mt-4">
+      <!-- Dynamic Categories -->
+    </div>
+    <div id="pets-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+      <!-- Dynamic Pets -->
+    </div>
+    <div id="liked-pets" class="mt-6">
+      <h3 class="text-xl font-bold">Liked Pets</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <!-- Liked Pets Thumbnails -->
+      </div>
+    </div>
+  </section>
+  
+  <script>
+    const apiBase = 'https://openapi.programming-hero.com/api/peddy';
+    
+    // Fetch categories
+    fetch(`${apiBase}/categories`)
+      .then(res => res.json())
+      .then(data => {
+        const categories = data.categories;
+        const categoriesContainer = document.getElementById('categories');
+        categories.forEach(category => {
+          const button = document.createElement('button');
+          button.innerText = category;
+          button.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded';
+          button.onclick = () => fetchPetsByCategory(category);
+          categoriesContainer.appendChild(button);
+        });
+      });
+  
+    // Fetch all pets
+    fetch(`${apiBase}/pets`)
+      .then(res => res.json())
+      .then(data => displayPets(data.pets));
+  
+    // Display pets
+    function displayPets(pets) {
+      const petsGrid = document.getElementById('pets-grid');
+      petsGrid.innerHTML = '';
+      pets.forEach(pet => {
+        const petCard = `<div class="bg-white shadow-md p-4 rounded">
+          <img src="${pet.image || 'placeholder.jpg'}" alt="${pet.name}" class="w-full h-40 object-cover rounded">
+          <h3 class="text-lg font-bold">${pet.name}</h3>
+          <p>Breed: ${pet.breed || 'N/A'}</p>
+          <p>Birth Date: ${pet.birthDate || 'Unknown'}</p>
+          <p>Price: $${pet.price || '0'}</p>
+          <div class="flex space-x-2 mt-4">
+            <button class="bg-green-500 text-white px-4 py-2 rounded" onclick="likePet('${pet.image}')">Like</button>
+            <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="adoptPet(this)">Adopt</button>
+            <button class="bg-gray-500 text-white px-4 py-2 rounded" onclick="showDetails('${pet.id}')">Details</button>
+          </div>
+        </div>`;
+        petsGrid.innerHTML += petCard;
+      });
+    }
+  
+    // Like a pet
+    function likePet(image) {
+      const likedPets = document.getElementById('liked-pets');
+      likedPets.innerHTML += `<img src="${image}" alt="Liked Pet" class="w-full h-40 object-cover rounded">`;
+    }
+  
+    // Adopt a pet
+    function adoptPet(button) {
+      button.disabled = true;
+      let count = 3;
+      const interval = setInterval(() => {
+        if (count === 0) {
+          clearInterval(interval);
+          button.innerText = 'Adopted';
+        } else {
+          button.innerText = `Adopting in ${count--}`;
+        }
+      }, 1000);
+    }
+  
+    // Fetch pets by category
+    function fetchPetsByCategory(category) {
+      fetch(`${apiBase}/category/${category}`)
+        .then(res => res.json())
+        .then(data => displayPets(data.pets));
+    }
+  
+    // Sort pets by price
+    function sortByPrice() {
+      const petsGrid = document.getElementById('pets-grid');
+      const pets = Array.from(petsGrid.children);
+      pets.sort((a, b) => {
+        const priceA = parseFloat(a.querySelector('p:nth-child(4)').innerText.split('$')[1]);
+        const priceB = parseFloat(b.querySelector('p:nth-child(4)').innerText.split('$')[1]);
+        return priceB - priceA;
+      });
+      pets.forEach(pet => petsGrid.appendChild(pet));
+    }
+  </script>
+
+<div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white p-6 rounded w-96">
+      <h3 id="modal-title" class="text-xl font-bold"></h3>
+      <p id="modal-content" class="mt-4"></p>
+      <button onclick="closeModal()" class="bg-red-500 text-white px-4 py-2 mt-4">Close</button>
+    </div>
+  </div>
+  
+  <script>
+    function showDetails(id) {
+      fetch(`${apiBase}/pet/${id}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('modal-title').innerText = data.name;
+          document.getElementById('modal-content').innerText = data.description || 'No additional information available.';
+          document.getElementById('modal').classList.remove('hidden');
+        });
+    }
+  
+    function closeModal() {
+      document.getElementById('modal').classList.add('hidden');
+    }
+  </script>
+      
+    <script src="/js/script.js"></script>
+</body>
+</html>
